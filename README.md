@@ -6,6 +6,7 @@ This library provides functionality for interacting with the Sensor Hub function
 ## BOARD SETUP
 If you are using a X-NUCLEO-IKS01A3 board, you must correctly wire up the sensor hub bus to the other sensors. To do this, short the middle two pins for each of the two jumper sets JP8 and JP7, which look like this:
 
+```
 JP8		* * * *
 JP7		* * * *
 
@@ -16,6 +17,7 @@ JP7		* O-O *
 
 * represents a pin
 O-O represents a jumper and the two pins it is shorting
+```
 
 Note that with this setup, normal sensor operation will be unavailable unless specific library functionality is used
 
