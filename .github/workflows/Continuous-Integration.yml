@@ -50,6 +50,7 @@ jobs:
       uses: stm32duino/actions/compile-examples@main
       with:
         board-pattern: "NUCLEO_L476RG"
+        libraries: "STM32duino LSM6DSO, STM32duino LIS2DW12, STM32duino LIS2MDL, STM32duino HTS221, STM32duino LPS22HH, STM32duino STTS751"
 
     # Use the output from the `Compile` step
     - name: Compilation Errors
