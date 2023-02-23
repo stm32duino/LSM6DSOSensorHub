@@ -1,0 +1,10 @@
+LSM6DSOHub	KEYWORD1
+resetMaster	KEYWORD2
+enablePassthrough	KEYWORD2
+disablePassthrough	KEYWORD2
+begin	KEYWORD2
+addDevice	KEYWORD2
+ready	KEYWORD2
+read	KEYWORD2
+waitAndRead	KEYWORD2
+getSensor	KEYWORD2
