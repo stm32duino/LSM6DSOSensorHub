@@ -75,12 +75,12 @@ Before activating the sensor hub with begin(), the enablePassthrough() function 
 
 */
 
-#include <LSM6DSOSensor.h>
-#include <STTS751Sensor.h>
-#include <LPS22HHSensor.h>
-#include <LIS2MDLSensor.h>
-#include <HTS221Sensor.h>
-#include <LSM6DSOHub.h>
+#include "LSM6DSOSensor.h"
+#include "STTS751Sensor.h"
+#include "LPS22HHSensor.h"
+#include "LIS2MDLSensor.h"
+#include "HTS221Sensor.h"
+#include "LSM6DSOHub.h"
 
 // Uncomment this to use the dedicated temperature sensor and disable the humidity sensor
 //#define USE_STTS751
