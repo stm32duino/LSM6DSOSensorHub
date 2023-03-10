@@ -117,17 +117,17 @@ STTS751Sensor Temp(&DEV_I2C);
 
 
 uint8_t readObj (LSM6DSOSensor &m, uint8_t reg)
-  {
+{
   uint8_t res = 0xff;
   m.Read_Reg(reg, &res);
   return res; 
-  }
+}
 
 void writeObj (LSM6DSOSensor &m, uint8_t reg, uint8_t data)
-  {
+{
   m.Write_Reg(reg, data);
   return;
-  }
+}
 
 
 static float Linear_Interpolation(lin_t *Lin, float Coeff)
@@ -135,11 +135,10 @@ static float Linear_Interpolation(lin_t *Lin, float Coeff)
   return (((Lin->y1 - Lin->y0) * Coeff) + ((Lin->x1 * Lin->y0) - (Lin->x0 * Lin->y1))) / (Lin->x1 - Lin->x0);
 }
 
-
 lin_t humLine;
 
-
-void setup() {
+void setup()
+{
   // Initialize serial for output.
   Serial.begin(115200);
   delay(1000);
@@ -189,7 +188,6 @@ void setup() {
   Master.Enable_X();
   Master.Enable_G();
 
-
   Hub.disablePassthrough();
   
   delay(100);
@@ -197,12 +195,12 @@ void setup() {
   // Prepare the sensor hub
   Hub.addDevice (0x3D, 0x68, 6);                  // Magnetometer sensor LIS2MDL
   Hub.addDevice (0xBB, 0x28, 5);                  // Pressure sensor LPS22H
-  #ifndef USE_STTS751
+#ifndef USE_STTS751
   Hub.addDevice (0xBF, (0x28 | 0x80U), 2);        // Humidity sensor HTS221
-  #else
+#else
   Hub.addDevice (0x95, 0x00, 1);                  // Temperature sensor STTS751 (Note: this has no auto-increment so it will read the same register 3 times)
   Hub.addDevice (0x95, 0x02, 1);                  // Temperature sensor STTS751 (Note: this has no auto-increment so it will read the same register 3 times)
-  #endif
+#endif
   // Engage master hub mode
   Hub.begin();
 
@@ -211,102 +209,95 @@ void setup() {
   delay(1000);
 }
 
-void loop() {
+void loop()
+{
+  Hub.waitAndRead();
 
-    Hub.waitAndRead();
-    
+  Serial.println("\r\n\r\n----------\r\n");
+  Hub.read();
 
-    Serial.println("\r\n\r\n----------\r\n");
-    Hub.read();
+  // Gyro and acc
+  int32_t acc[3];
+  int32_t gyr[3];
 
-    // Gyro and acc
-    int32_t acc[3];
-    int32_t gyr[3];
+  Master.Get_X_Axes(acc);
+  Master.Get_G_Axes(gyr);
+  Serial.println("LSM6DSO:");
+  Serial.print("Accelerometer =");
+  Serial.println(String(acc[0]) + " - " + String(acc[1]) + " - " + String(acc[2]));
+  Serial.print("Gyroscope =");
+  Serial.println(String(gyr[0]) + " - " + String(gyr[1]) + " - " + String(gyr[2]));
+  Serial.println("");
 
-    Master.Get_X_Axes(acc);
-    Master.Get_G_Axes(gyr);
-    Serial.println("LSM6DSO:");
-    Serial.print("Accelerometer =");
-    Serial.println(String(acc[0]) + " - " + String(acc[1]) + " - " + String(acc[2]));
-    Serial.print("Gyroscope =");
-    Serial.println(String(gyr[0]) + " - " + String(gyr[1]) + " - " + String(gyr[2]));
-    Serial.println("");
+  // Magnetometer
+  uint32_t dataMag [6];
 
-    // Magnetometer
-    uint32_t dataMag [6];
+  Hub.getSensor (0, dataMag);
 
-    Hub.getSensor (0, dataMag);
+  // We have the data, now do concats to produce the full values
+  int16_t x = (dataMag[1] << 8) | dataMag[0];
+  int16_t y = (dataMag[3] << 8) | dataMag[2];
+  int16_t z = (dataMag[5] << 8) | dataMag[4];
+  int magX = (int) x;
+  int magY = (int) y;
+  int magZ = (int) z;
 
-    // We have the data, now do concats to produce the full values
-    int16_t x = (dataMag[1] << 8) | dataMag[0];
-    int16_t y = (dataMag[3] << 8) | dataMag[2];
-    int16_t z = (dataMag[5] << 8) | dataMag[4];
-    int magX = (int) x;
-    int magY = (int) y;
-    int magZ = (int) z;
+  // Apply sensitivity
+  magX = (int) (magX * 1.5);
+  magY = (int) (magY * 1.5);
+  magZ = (int) (magZ * 1.5);
 
-    // Apply sensitivity
-    magX = (int) (magX * 1.5);
-    magY = (int) (magY * 1.5);
-    magZ = (int) (magZ * 1.5);
+  Serial.println("LIS2MDL:");
+  Serial.print("Mag = ");
+  Serial.println(String(magX) + " - " + String(magY) + " - " + String(magZ));
+  Serial.println("");
 
-    Serial.println("LIS2MDL:");
-    Serial.print("Mag = ");
-    Serial.println(String(magX) + " - " + String(magY) + " - " + String(magZ));
-    Serial.println("");
+  // Pressure and temperature sensor
+  uint32_t dataPress [5];
+  Hub.getSensor(1, dataPress);
 
+  int32_t press = (dataPress[2] << 16) | (dataPress[1] << 8) | dataPress[0];
+  float fpress = (((float)press) / 4096.0f);
 
-    // Pressure and temperature sensor
-    uint32_t dataPress [5];
-    Hub.getSensor(1, dataPress);
-    
-    int32_t press = (dataPress[2] << 16) | (dataPress[1] << 8) | dataPress[0];
-    float fpress = (((float)press) / 4096.0f);
+  Serial.println("LPS22HH:");
+  Serial.println("Pressure = " + String(fpress));
 
-    Serial.println("LPS22HH:");
-    Serial.println("Pressure = " + String(fpress));
+  // As temperature
+  int16_t pressTemp = (dataPress[4] << 8) | dataPress[3];
+  float t = ((float) pressTemp) / 100;
 
+  Serial.println("Temperature = " + String(t));    
+  Serial.println("");
 
-    // As temperature
-
-    int16_t pressTemp = (dataPress[4] << 8) | dataPress[3];
-    float t = ((float) pressTemp) / 100;
-
-    Serial.println("Temperature = " + String(t));    
-    Serial.println("");
-    
 #ifdef USE_STTS751
-    // Temperature Sensor
-    uint32_t dataTempHi [1];
-    Hub.getSensor (2, dataTempHi);
-    uint32_t dataTempLo [1];
-    Hub.getSensor (3, dataTempLo);
+  // Temperature Sensor
+  uint32_t dataTempHi [1];
+  Hub.getSensor (2, dataTempHi);
+  uint32_t dataTempLo [1];
+  Hub.getSensor (3, dataTempLo);
 
-    uint32_t tempRaw = (dataTempHi[0] << 8 ) | dataTempLo[0];
-    int tempInt = (int) tempRaw;
-    float temp = (float) tempInt;
-    temp = temp / 256.0f;
-    
-    Serial.println("STTS751:");
-    Serial.println("Temperature = " + String(temp));
-    Serial.println("");
+  uint32_t tempRaw = (dataTempHi[0] << 8 ) | dataTempLo[0];
+  int tempInt = (int) tempRaw;
+  float temp = (float) tempInt;
+  temp = temp / 256.0f;
 
+  Serial.println("STTS751:");
+  Serial.println("Temperature = " + String(temp));
+  Serial.println("");
 #else
-    // Humidity sensor
-    uint32_t dataHum [2];
-    Hub.getSensor (2, dataHum);
-    
-    int16_t hum = (int16_t) ((dataHum[1] << 8) | dataHum[0]);
+  // Humidity sensor
+  uint32_t dataHum [2];
+  Hub.getSensor (2, dataHum);
 
-    float fhum = (float) hum;
-    float rh = Linear_Interpolation(&humLine, fhum);
+  int16_t hum = (int16_t) ((dataHum[1] << 8) | dataHum[0]);
 
-    Serial.println("HTS221:");
-    Serial.println("% Humidity = " + String(rh));
-    Serial.println("");
+  float fhum = (float) hum;
+  float rh = Linear_Interpolation(&humLine, fhum);
 
+  Serial.println("HTS221:");
+  Serial.println("% Humidity = " + String(rh));
+  Serial.println("");
 #endif
 
-    delay(1000);
-
+  delay(1000);
 }
