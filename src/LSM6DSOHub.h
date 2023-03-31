@@ -2,8 +2,8 @@
  ******************************************************************************
  * @file    LSM6DSOHub.h
  * @author  Lorenzo Bini
- * @version V1.0.0
- * @date    February 2023
+ * @version V1.1.0
+ * @date    March 2023
  * @brief   Library for interacting with the LSM6DSO Sensor Hub function
  ******************************************************************************
  * @attention
@@ -64,7 +64,7 @@ class LSM6DSOHub {
     // reg = address of the first register to be read by the sensor hub
     // reads = how many times the device should be read in succession; cannot exceed 7
     // Note: many devices will automatically provide successive registers when read in succession, but some will not. This is usually referred to as auto-increment. Check your device datasheet.
-    bool addDevice(uint8_t addr, uint8_t reg, uint8_t reads);
+    int addDevice(uint8_t addr, uint8_t reg, uint8_t reads);
 
     // Returns True when the sensor hub is ready with new results, after which they should be read using read().
     bool ready();

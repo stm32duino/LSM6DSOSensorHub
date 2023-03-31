@@ -2,8 +2,8 @@
  ******************************************************************************
  * @file    LSM6DSOHub.cpp
  * @author  Lorenzo Bini
- * @version V1.0.0
- * @date    February 2023
+ * @version V1.1.0
+ * @date    March 2023
  * @brief   Library for interacting with the LSM6DSO Sensor Hub function
  ******************************************************************************
  * @attention
@@ -74,11 +74,11 @@ LSM6DSOHub::LSM6DSOHub(LSM6DSOSensor *m) : master(m)
   hubMode = 0x40;
   normalMode = 0x00;
 
-  slaveConfigAddr = 0x15;                  // Rule: add 3*n for nth slave set where n is nth set numbered 0...3
+  slaveConfigAddr = 0x15;                     // Rule: add 3*n for nth slave set where n is nth set numbered 0...3
   slaveConfigReg = 0x16;
   slaveConfigMode = 0x17;
-  slaveResultFirst = 0x02;                 // Rule: increment by 1 to access next register until 0x13
-  slaveResultLast = 0x13;                  // Highest possible result register
+  slaveResultFirst = 0x02;                    // Rule: increment by 1 to access next register until 0x13
+  slaveResultLast = 0x13;                     // Highest possible result register
 
   memset(results, 0xff, 18 * sizeof(uint8_t)); // If you are reading 0xff there is probably an error
   memset(resultsOffsets, 0, 4 * sizeof(int));
@@ -108,9 +108,9 @@ void LSM6DSOHub::enablePassthrough()
   hubEnter();
 
   uint8_t reg = 0xff;
-  master->Read_Reg(masterConfigReg, &reg);                         // Get status of master register
-  reg = reg | 0b00010000;                                         // Raise passthrough flag
-  master->Write_Reg(masterConfigReg, reg);                         // Write status of master register
+  master->Read_Reg(masterConfigReg, &reg);                          // Get status of master register
+  reg = reg | 0b00010000;                                           // Raise passthrough flag
+  master->Write_Reg(masterConfigReg, reg);                          // Write status of master register
 
   hubExit();
   return;
@@ -121,9 +121,9 @@ void LSM6DSOHub::disablePassthrough()
   hubEnter();
 
   uint8_t reg = 0xff;
-  master->Read_Reg(masterConfigReg, &reg);                         // Get status of master register
-  reg = reg & 0b11101111;                                         // Lower passthrough flag
-  master->Write_Reg(masterConfigReg, reg);                         // Write status of master register
+  master->Read_Reg(masterConfigReg, &reg);                          // Get status of master register
+  reg = reg & 0b11101111;                                           // Lower passthrough flag
+  master->Write_Reg(masterConfigReg, reg);                          // Write status of master register
 
   hubExit();
   return;
@@ -144,15 +144,15 @@ bool LSM6DSOHub::begin()
   return false;
 }
 
-bool LSM6DSOHub::addDevice(uint8_t addr, uint8_t reg, uint8_t reads)
+int LSM6DSOHub::addDevice(uint8_t addr, uint8_t reg, uint8_t reads)
 {
   if (reads > 7) {
-    return true;  // ERROR: each device can't be read more than 7 times
+    return -20;  // ERROR: each device can't be read more than 7 times
   }
 
   hubEnter();
   if (numSensors > 3) {
-    return true;  // ERROR: too many sensors are being added. Maximum is four, numbered 0...3
+    return -10;  // ERROR: too many sensors are being added. Maximum is four, numbered 0...3
   }
   numSensors = numSensors + 1;
 
@@ -168,7 +168,7 @@ bool LSM6DSOHub::addDevice(uint8_t addr, uint8_t reg, uint8_t reads)
   resultsOffsets [numSensors] = reads;
   hubExit();
 
-  return false;
+  return numSensors;
 }
 
 bool LSM6DSOHub::ready()                               // Returns True when the sensor hub is ready with new results, after which they should be read using read()
